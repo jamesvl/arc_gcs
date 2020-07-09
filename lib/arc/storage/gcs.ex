@@ -6,6 +6,11 @@ defmodule Arc.Storage.GCS do
   @endpoint "storage.googleapis.com"
   @library_version Mix.Project.config() |> Keyword.get(:version, "")
 
+  # per v4 signing rules; see
+  # https://cloud.google.com/storage/docs/authentication/canonical-requests#about-resource-path
+  # @gcs_encode String.to_charlist(~S{?=!#$&'()*+,:;@[]."})
+  @gcs_encode String.to_charlist(~S{?=!#()[]"})
+
   # available options resource settings
   # https://cloud.google.com/storage/docs/json_api/v1/objects#resource
   @object_attrs [
@@ -216,7 +221,7 @@ defmodule Arc.Storage.GCS do
       value -> Path.join(value, path)
     end
     |> prepend_slash()
-    |> URI.encode()
+    |> URI.encode(&(&1 not in @gcs_encode && URI.char_unescaped?(&1)))
   end
 
   defp bucket_name(definition) do
